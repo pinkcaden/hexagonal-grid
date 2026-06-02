@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://ywc6yhbgxr54"]
+
+[ext_resource type="Script" uid="uid://barpkqr50sfrh" path="res://HexTile.gd" id="1_je3b2"]
+[ext_resource type="Texture2D" uid="uid://bfv1epxbpxlaw" path="res://blank-tile.png" id="2_jvdj8"]
+
+[node name="HexTile" type="Node2D" unique_id=609784348]
+script = ExtResource("1_je3b2")
+
+[node name="Sprite" type="Sprite2D" parent="." unique_id=2067504486]
+position = Vector2(-1, -2)
+texture = ExtResource("2_jvdj8")
+region_rect = Rect2(0, 0, 1000, 978.469)

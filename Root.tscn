@@ -1,3 +1,76 @@
 [gd_scene format=3 uid="uid://cl8q0wwjpjxbu"]
 
-[node name="Root" type="Node2D"]
+[ext_resource type="Script" uid="uid://ce1dhdhcxr6tg" path="res://Root.gd" id="1_g0d6c"]
+[ext_resource type="PackedScene" uid="uid://dhsfkbf4dt8xj" path="res://HexMap.tscn" id="1_gxo8o"]
+[ext_resource type="PackedScene" uid="uid://ywc6yhbgxr54" path="res://HexTile.tscn" id="2_cwqeq"]
+[ext_resource type="Texture2D" uid="uid://cwulv6xj82ahi" path="res://forest-tile.png" id="3_3ipfy"]
+[ext_resource type="Texture2D" uid="uid://bojs5iooejgdx" path="res://grass-tile.png" id="4_g0d6c"]
+[ext_resource type="Texture2D" uid="uid://b60xpl2xjewks" path="res://mountain-tile.png" id="5_3ipfy"]
+
+[node name="Root" type="Node2D" unique_id=1467404072]
+script = ExtResource("1_g0d6c")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1885954222]
+z_index = -5
+offset_right = 1152.0
+offset_bottom = 647.0
+
+[node name="HexMap" parent="." unique_id=289532028 instance=ExtResource("1_gxo8o")]
+position = Vector2(600, 323)
+tile_scene = ExtResource("2_cwqeq")
+tile_types = Array[String](["Forest", "Plains", "Mountains"])
+tile_textures = Dictionary[String, Texture]({
+"Forest": ExtResource("3_3ipfy"),
+"Mountains": ExtResource("5_3ipfy"),
+"Plains": ExtResource("4_g0d6c")
+})
+texture_weights = Dictionary[String, float]({
+"Forest": 3.0,
+"Mountains": 3.0,
+"Plains": 3.0
+})
+
+[node name="Button" type="Button" parent="." unique_id=156045476]
+offset_left = 82.0
+offset_top = 38.0
+offset_right = 247.5
+offset_bottom = 96.0
+scale = Vector2(2, 2)
+text = "Randomize"
+
+[node name="TopWidth" type="HSlider" parent="." unique_id=687116499]
+offset_left = 496.0
+offset_top = 39.0
+offset_right = 610.0
+offset_bottom = 106.0
+scale = Vector2(2, 2)
+min_value = 1.0
+max_value = 16.0
+value = 3.0
+
+[node name="Label" type="Label" parent="TopWidth" unique_id=36932502]
+self_modulate = Color(0, 0, 0, 1)
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Top Width"
+
+[node name="CenterWidth" type="HSlider" parent="." unique_id=935233081]
+offset_left = 824.0
+offset_top = 39.0
+offset_right = 938.0
+offset_bottom = 106.0
+scale = Vector2(2, 2)
+min_value = 3.0
+max_value = 15.0
+step = 2.0
+value = 5.0
+
+[node name="Label" type="Label" parent="CenterWidth" unique_id=341864937]
+self_modulate = Color(0, 0, 0, 1)
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Center Width"
+
+[connection signal="pressed" from="Button" to="HexMap" method="set_random_textures"]
