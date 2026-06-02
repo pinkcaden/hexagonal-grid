@@ -27,7 +27,7 @@ func _start_thread() -> void:
 		return new)
 
 func _process(delta : float) -> void:
-	if _thread && !_thread.is_alive(): 
+	if _thread && (!_thread.is_alive()):
 		_queue.push_back(_thread.wait_to_finish())
 		_thread = null
 		if _queue.size() < _desired_size: 
@@ -41,7 +41,7 @@ func get_scene() ->  Node:
 
 func create_scene_blocking() -> void:
 	var new = _loaded.instantiate()
-	new.callv(_setup_method, _args)
+	if _setup_method != "": new.callv(_setup_method, _args)
 	_queue.push_back(new)
 	
 func return_scene(scene : Node) -> void:

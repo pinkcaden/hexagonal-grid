@@ -1,10 +1,14 @@
-## Author: Caden Pink
+## Author: Caden Pink, Date: 06/01/26
 ## TODO: Fix these horrible variable names
 
 class_name HexMap
 extends Node2D
 
-var _TILE_LOAD_RETRIES = 5
+var _TILE_LOAD_RETRIES : int = 5
+
+var _SQUARE_TO_HEX_AREA_RATIO : float = 2 / (3 * sqrt(3))
+
+var _ELLIPSE_GRACE_PERC : float = .5
 
 @export var tile_scene : PackedScene
 @export var tile_types : Array[String]
@@ -13,22 +17,22 @@ var _TILE_LOAD_RETRIES = 5
 @export var tile_setup_method : Dictionary[String, Array]
 @export var tile_setup_arguments : Dictionary[String, Array]
 
-var _center_width_count : int 
-var _top_width_count : int
-
-var _free_tiles : Array[HexTile] = []
-var _added_tiles : Array[HexTile] = []
+var _tile_scene_pool : ScenePool = null
 var _placed_tiles : Array[Array] = []
 
 
-var _map_width : int = 750
-var _map_height : int = 750
-var _tile_height : int = 0
-var _tile_width : int = 0
+var _map_w_px : int = 750
+var _map_h_px : int = 750
+var _approx_map_area_tiles : int = 0
 
-var _tile_scene_pool : ScenePool
-var _tile_area_count : int = 0
-var _tile_height_count : int = 0
+var _map_w_tiles : int = 0
+var _map_h_tiles : int = 0
+
+var _tile_h_px : int = 0
+var _tile_w_px : int = 0
+
+
+
 
 func _ready():
 	for node in get_children():
@@ -38,40 +42,33 @@ func _ready():
 		print("Check texture keys")
 	if tile_setup_arguments.keys() != tile_setup_method.keys():
 		print("Check set-up keys")
-	_tile_scene_pool = ScenePool.new(tile_scene, _tile_area_count)
-	set_width_tiles(5, 3)
-	create_tiles()
-	set_size_pixels(_map_width, _map_height)
+	set_map_size_tiles(9, 9)
+	set_map_size_pixels(_map_w_px, _map_h_px)
 	reposition_tiles()
+	set_random_textures()
 		
-func set_width_tiles(center_width_count : int, top_width_count : int) -> void:
-	_center_width_count = center_width_count
-	_top_width_count = top_width_count
-	# center row + center to end triange - top to end triangle
-	# triangle size uses sum of natual numebrs formula. factor of 2 multiplied because triange is mirrored.
-	_tile_area_count = center_width_count + center_width_count*(center_width_count-1) - top_width_count*(top_width_count-1)
-	_tile_height_count = 1 + 2 * (center_width_count - top_width_count)
-	set_size_pixels(_map_width, _map_height)
+func set_map_size_tiles(width_in_tiles : int, height_in_tiles : int) -> void:
 	
+	if width_in_tiles > 15 or height_in_tiles > 15 or height_in_tiles > width_in_tiles:
+		return
+	_map_w_tiles = width_in_tiles
+	_map_h_tiles = height_in_tiles
 	
-func set_size_pixels(width_pixels : int, height_pixels : int) -> void:
-	_tile_width = width_pixels / (_center_width_count + 2)
-	_tile_height = height_pixels / (_tile_height_count + 2 + _tile_height_count % 2) 
-	_map_width = width_pixels
+	var ellipse_area = PI * width_in_tiles * height_in_tiles
+	_approx_map_area_tiles = int(ellipse_area * _SQUARE_TO_HEX_AREA_RATIO)
+	
+	if _tile_scene_pool == null:
+		_tile_scene_pool = ScenePool.new(tile_scene, _approx_map_area_tiles)
+		add_child(_tile_scene_pool)
+	set_map_size_pixels(_map_w_px, _map_h_px)
+	
+func set_map_size_pixels(width_in_pixels : int, height_in_pixels : int) -> void:
+	_map_w_px = width_in_pixels
+	_map_h_px = height_in_pixels
+	
+	_tile_w_px = width_in_pixels / _map_w_tiles
+	_tile_h_px = height_in_pixels / _map_h_tiles
 
-func create_tiles() -> bool:
-	var retry_count = 0
-	for i in range(_free_tiles.size(), _tile_area_count + 10):
-		retry_count = 0
-		var _new_tile_node = _tile_scene_pool.get_scene()
-		while (_new_tile_node == null):
-			retry_count += 1
-			if retry_count > _TILE_LOAD_RETRIES:
-				return false
-			_tile_scene_pool.create_scene_blocking()
-			_new_tile_node = _tile_scene_pool.get_scene()
-		_free_tiles.append(_new_tile_node)
-	return true
 
 
 func reposition_tiles() -> void:
@@ -79,50 +76,36 @@ func reposition_tiles() -> void:
 		for tile : HexTile in row:
 			if tile != null:
 				remove_child(tile)
-				_free_tiles.append(tile)
+				_tile_scene_pool.return_scene(tile)
 	_placed_tiles = []
-	create_tiles()
-	## TODO: reuse placed tiles
-	var vert_correction = _tile_height_count % 2
-	for r in range(_tile_height_count + 2 + vert_correction):
+	for r in range(_map_h_tiles):
 		var new_li = []
-		new_li.resize(_center_width_count + 2)
+		new_li.resize(_map_w_tiles + 1)
 		new_li.fill(null)
 		_placed_tiles.append(new_li)
-	var middle_ind = (_tile_height_count + 2 + vert_correction) / 2
+	var middle_ind = _map_h_tiles / 2
 	var middle_row = _placed_tiles[middle_ind]
-	var x_pos = -_map_width / 2
-	for col in range (1, _center_width_count + 1):
-		x_pos += _tile_width
-		var claimed_tile = _free_tiles.pop_back()
-		add_child(claimed_tile)
-		claimed_tile.position.x = x_pos
-		claimed_tile.position.y = 0
-		claimed_tile.set_size(_tile_width, _tile_height)
+	var x_pos =  - ( _map_w_px + _tile_w_px ) / 2
+	for col in range (0, _map_w_tiles):
+		x_pos += _tile_w_px
+		var claimed_tile = _spawn_tile(x_pos, 0)
 		middle_row[col] = claimed_tile
-	var y_delta = 0
-	var tile_count = _center_width_count
-	for row_delta in range(1, _center_width_count - _top_width_count):
-		tile_count -= 1
-		y_delta += _tile_height * 3/4
-		var x_offset = -_map_width / 2 + row_delta * (_tile_width / 2)
-		var top_row = _placed_tiles[middle_ind - row_delta]
-		var bottom_row = _placed_tiles[middle_ind + row_delta]
-		for col in range(row_delta + row_delta % 2, row_delta + row_delta % 2 + tile_count): ##TODO: fix this line
-			x_offset += _tile_width
-			var top_node = _free_tiles.pop_back()
-			add_child(top_node)
-			top_node.position.y = -y_delta
-			top_node.position.x = x_offset
-			top_node.set_size(_tile_width, _tile_height)
-			var bottom_node = _free_tiles.pop_back()
-			add_child(bottom_node)
-			bottom_node.position.y = y_delta
-			bottom_node.position.x = x_offset
-			bottom_node.set_size(_tile_width, _tile_height)
-			top_row[col] = top_node
-			bottom_row[col] = bottom_node
 
+	var y_diff : int = 0
+	var ellipse_x : float
+	var grace = _tile_w_px * _ELLIPSE_GRACE_PERC
+	for row in range(1, _map_h_tiles / 2 + 1):
+		x_pos =  - ( _map_w_px  + _tile_w_px * row) / 2 + _tile_w_px / 2
+		y_diff += 3 * _tile_h_px / 4
+		## f(y) for ellipse: x = b * sqrt(1 - y^2 / a^2) b is vert acis, a is horiz axis
+		ellipse_x = (_map_w_px / 2) * sqrt(1 - (pow(y_diff, 2) / pow((_map_h_px / 2), 2)))
+		var ind = row - row & 2
+		while x_pos < ellipse_x - grace:
+			if x_pos > - (ellipse_x - grace):
+				_placed_tiles[middle_ind + row][ind] = _spawn_tile(x_pos, y_diff)
+				_placed_tiles[middle_ind - row][ind] = _spawn_tile(x_pos, -y_diff)
+			ind += 1
+			x_pos += _tile_w_px
 			
 func set_random_textures() -> void:
 	var tile_weight_sum : float = 0
@@ -138,3 +121,24 @@ func set_random_textures() -> void:
 					if cumulative_prob >= prob:
 						tile.set_texture(tile_textures[type])
 						break
+
+
+func _spawn_tile(x_pos_px : int, y_pos_px : int) -> HexTile:
+		var claimed_tile = _get_tile()
+		add_child(claimed_tile)
+		claimed_tile.position.x = x_pos_px
+		claimed_tile.position.y = y_pos_px
+		claimed_tile.set_size(_tile_w_px, _tile_h_px)
+		return claimed_tile
+
+func _get_tile() -> HexTile:
+	var claimed_tile = _tile_scene_pool.get_scene()
+	var retry_count : int = 0
+	while (claimed_tile == null):
+		retry_count += 1
+		if retry_count > _TILE_LOAD_RETRIES:
+			print("failed to get tile from pool")
+			return null
+		_tile_scene_pool.create_scene_blocking()
+		claimed_tile = _tile_scene_pool.get_scene()
+	return claimed_tile

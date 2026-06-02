@@ -16,7 +16,7 @@ offset_right = 1152.0
 offset_bottom = 647.0
 
 [node name="HexMap" parent="." unique_id=289532028 instance=ExtResource("1_gxo8o")]
-position = Vector2(600, 323)
+position = Vector2(560, 348)
 tile_scene = ExtResource("2_cwqeq")
 tile_types = Array[String](["Forest", "Plains", "Mountains"])
 tile_textures = Dictionary[String, Texture]({
@@ -38,39 +38,40 @@ offset_bottom = 96.0
 scale = Vector2(2, 2)
 text = "Randomize"
 
-[node name="TopWidth" type="HSlider" parent="." unique_id=687116499]
+[node name="Width" type="HSlider" parent="." unique_id=687116499]
 offset_left = 496.0
 offset_top = 39.0
 offset_right = 610.0
 offset_bottom = 106.0
 scale = Vector2(2, 2)
-min_value = 1.0
-max_value = 16.0
+min_value = 3.0
+max_value = 15.0
+step = 2.0
 value = 3.0
 
-[node name="Label" type="Label" parent="TopWidth" unique_id=36932502]
+[node name="Label" type="Label" parent="Width" unique_id=36932502]
 self_modulate = Color(0, 0, 0, 1)
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
-text = "Top Width"
+text = "Width"
 
-[node name="CenterWidth" type="HSlider" parent="." unique_id=935233081]
+[node name="Height" type="HSlider" parent="." unique_id=935233081]
 offset_left = 824.0
 offset_top = 39.0
 offset_right = 938.0
 offset_bottom = 106.0
 scale = Vector2(2, 2)
 min_value = 3.0
-max_value = 15.0
+max_value = 13.0
 step = 2.0
 value = 5.0
 
-[node name="Label" type="Label" parent="CenterWidth" unique_id=341864937]
+[node name="Label" type="Label" parent="Height" unique_id=341864937]
 self_modulate = Color(0, 0, 0, 1)
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
-text = "Center Width"
+text = "Height"
 
 [connection signal="pressed" from="Button" to="HexMap" method="set_random_textures"]
